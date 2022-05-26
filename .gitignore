@@ -1,0 +1,9 @@
+/.idea
+/venv
+/__pycache__
+s.json
+users.json
+error.log
+feedback.txt
+previous_rates.json
+bot_data.json
