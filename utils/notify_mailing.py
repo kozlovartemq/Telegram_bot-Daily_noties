@@ -1,11 +1,7 @@
-import logging
-import time
 import requests
 from bs4 import BeautifulSoup
 import json
-from print_helper import print_json
 from datetime import datetime
-from schedule import every, repeat, run_pending
 
 
 class DailyMailing:
@@ -83,7 +79,7 @@ class DailyMailing:
         return float_btc
 
     def save_history_of_rates(self, rub_rates, btc_rate):
-        with open('previous_rates.json', 'r+') as file:
+        with open('../data/previous_rates.json', 'r+', encoding='utf-8') as file:
             rates: dict = json.loads(file.read())
             rates[self.__userid] = {}
             if isinstance(rub_rates, dict):
@@ -101,7 +97,7 @@ class DailyMailing:
         current_weather = {}
         forecast_weather = {}
         alerts = {}
-        with open('weather_data.json') as f:
+        with open('../data/weather_data.json', encoding='utf-8') as f:
             weather_json = json.load(f)
         for city in cities:
             try:
@@ -134,7 +130,7 @@ class DailyMailing:
         return current_weather, forecast_weather, alerts
 
     def get_differance_in_rates(self, rub_rates, btc):
-        with open('previous_rates.json') as f:
+        with open('../data/previous_rates.json', encoding='utf-8') as f:
             previous_rates = json.load(f)
         dif = {'USD-BTC': 0}  # Заполняем нулями для случая, если предыдущие величины не найдены
         for rate in rub_rates['rates'].keys():
@@ -223,48 +219,13 @@ class DailyMailing:
         return msg
 
     def send_msg(self, msg, silent=True):
-        with open('bot_data.json') as f:
+        with open('../data/bot_data.json', encoding='utf-8') as f:
             data = json.load(f)
         requests.post(url=f'{self.TELEGRAM_BOT_API}{data["Token"]}/sendMessage?chat_id={data["GroupID"]}&disable_notification={silent}&text={msg}')
         print("Cообщение успешно отправилось!")
 
     def get_updates(self):
-        with open('bot_data.json') as f:
+        with open('../data/bot_data.json', encoding='utf-8') as f:
             data = json.load(f)
         response = requests.get(url=f'{self.TELEGRAM_BOT_API}{data["Token"]}/getUpdates').json()
         return response
-
-
-# @repeat(every().day.at("22:01:50"))
-# def job():
-    # session = DailyMailing()
-    # print(session.get_random_quote())
-    # try:
-        # rub_rates = session.get_rub_rates()
-        # btc_rate = session.parse_btc_rate()
-        # weather = session.get_api_weather()
-        # dif = session.get_differance_in_rates(rub_rates, btc_rate)
-        # msg = session.create_msg(rub_rates, btc_rate, dif, weather)
-        # session.send_msg(msg)
-        # session.save_history_of_rates(rub_rates, btc_rate)
-        # session.send_msg('Это сообщение бота, который запущен на телефоне в фоновом режиме. Сообщение было запланировано '
-        #                  'на 17:30:00 и, если оно отправилось, значит можно просто держать бота на телефоне,'
-        #                  ' если много батареи жрать не будет.')
-    # except Exception as e:
-    #     try:
-    #         with open('error.log', 'w') as file:
-    #             file.write(str(e))
-    #         session.send_msg('Что-то пошло не так...')
-    #         print('Что-то пошло не так... Смотри логи.')
-    #     except Exception as e2:
-    #         with open('error.log', 'a') as file:
-    #             file.write('\nДаже сообщение об ошибке не отправилось...\n')
-    #             file.write(str(e2))
-    #             print('Даже сообщение об ошибке не отправилось... Смотри логи.')
-
-
-if __name__ == '__main__':
-    # job()
-    while True:
-        run_pending()
-        time.sleep(1)
