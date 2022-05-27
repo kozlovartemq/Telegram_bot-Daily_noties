@@ -29,7 +29,7 @@ async def start(message: types.Message):
     start_button = ['Создать оповещение!', 'Удалить оповещение!', 'Обратная связь']
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*start_button)
-    msg = 'Привет, я бот. Я могу присылать ежедневыные оповещения с указанными темами в заданное время.' \
+    msg = 'Привет, я бот. Я могу присылать ежедневные оповещения с указанными темами в заданное время.' \
           '\n\nЕсли Вы нашли ошибку в работе бота или у Вас есть предложения по его улучшению, запросы на новые темы,' \
           ' новые города, напишите об этом через форму "Обратной связи".' \
           '\n\nТемы:' \
@@ -192,7 +192,7 @@ async def select_silent(message: types.Message):
         userid = str(message.from_user.id)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add('/start')
-        await message.answer(f'Нечего настраивать. Увидемся в указанное время!', reply_markup=keyboard)
+        await message.answer(f'Нечего настраивать. Увидимся в указанное время!', reply_markup=keyboard)
         aioschedule.every().day.at(users[userid]['time']).do(job, userid=message.from_user.id, dictvalue=users[userid]).tag(userid)
         print(f"Джоб для {userid} запланирован")
 
