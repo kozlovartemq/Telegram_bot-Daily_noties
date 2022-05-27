@@ -1,3 +1,4 @@
+import logging
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -137,7 +138,9 @@ class DailyMailing:
                 except:
                     alerts[f"{city}"].update({'alerts': [None]})
             except Exception:
-                return 'Не удалось получить прогноз погоды.\n'
+                err_msg = 'Не удалось получить прогноз погоды.\n'
+                logging.exception(err_msg)
+                return err_msg
         return current_weather, forecast_weather, alerts
 
     def get_differance_in_rates(self, rub_rates, btc):
