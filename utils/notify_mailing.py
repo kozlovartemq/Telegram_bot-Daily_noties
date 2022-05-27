@@ -108,10 +108,12 @@ class DailyMailing:
         alerts = {}
         with open(pathes['weather'], encoding='utf-8') as f:
             weather_json = json.load(f)
+        with open(pathes['bot_data'], encoding='utf-8') as f:
+            bot_data = json.load(f)
         for city in cities:
             try:
                 onecall = requests.get(
-                    url=f"{self.BASE_URL_WEATHER_API}onecall?lat={weather_json[city]['lat']}&lon={weather_json[city]['lon']}&exclude=minutely,hourly&appid={weather_json['API_Key']}&lang=ru").json()
+                    url=f"{self.BASE_URL_WEATHER_API}onecall?lat={weather_json[city]['lat']}&lon={weather_json[city]['lon']}&exclude=minutely,hourly&appid={bot_data['API_Key_weather']}&lang=ru").json()
                 current_weather[city] = {}
                 current_weather[city].update({'current_desc': onecall['current']['weather'][0]['description']})
                 current_weather[city].update({'current_temp': f"{round(onecall['current']['temp'] - 273, 1)} C"})
