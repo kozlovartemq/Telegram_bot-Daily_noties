@@ -1,0 +1,19 @@
+{
+  "Cities": ["Krasnoyarsk", "Novosibirsk", "Moscow", "Nur-Sultan"],
+  "Krasnoyarsk": {
+    "lat": 56.010,
+    "lon": 92.792
+  },
+  "Novosibirsk": {
+    "lat": 55.041,
+    "lon": 82.934
+  },
+  "Moscow": {
+    "lat": 55.752,
+    "lon": 37.6156
+  },
+  "Nur-Sultan": {
+    "lat": 51.180,
+    "lon": 71.500
+  }
+}
