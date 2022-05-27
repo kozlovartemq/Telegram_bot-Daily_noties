@@ -2,6 +2,15 @@ import requests
 from bs4 import BeautifulSoup
 import json
 from datetime import datetime
+import pathlib
+from pathlib import Path
+
+
+pathes = {
+    'weather': f"{str(Path(pathlib.Path.cwd() / 'data' / 'weather_data.json'))}",
+    'previous_rates': f"{str(Path(pathlib.Path.cwd() / 'data' / 'previous_rates.json'))}",
+    'bot_data': f"{str(Path(pathlib.Path.cwd() / 'data' / 'bot_data.json'))}"
+}
 
 
 class DailyMailing:
@@ -79,7 +88,7 @@ class DailyMailing:
         return float_btc
 
     def save_history_of_rates(self, rub_rates, btc_rate):
-        with open('../data/previous_rates.json', 'r+', encoding='utf-8') as file:
+        with open(pathes['previous_rates'], 'r+', encoding='utf-8') as file:
             rates: dict = json.loads(file.read())
             rates[self.__userid] = {}
             if isinstance(rub_rates, dict):
@@ -97,7 +106,7 @@ class DailyMailing:
         current_weather = {}
         forecast_weather = {}
         alerts = {}
-        with open('../data/weather_data.json', encoding='utf-8') as f:
+        with open(pathes['weather'], encoding='utf-8') as f:
             weather_json = json.load(f)
         for city in cities:
             try:
@@ -130,7 +139,7 @@ class DailyMailing:
         return current_weather, forecast_weather, alerts
 
     def get_differance_in_rates(self, rub_rates, btc):
-        with open('../data/previous_rates.json', encoding='utf-8') as f:
+        with open(pathes['previous_rates'], encoding='utf-8') as f:
             previous_rates = json.load(f)
         dif = {'USD-BTC': 0}  # Заполняем нулями для случая, если предыдущие величины не найдены
         for rate in rub_rates['rates'].keys():
@@ -164,7 +173,7 @@ class DailyMailing:
                 if rate == 'USD-RUB':
                     msg += f"1 доллар  = {rub_rates['rates'][rate]} рублей ({differance[1][rate]} {differance[0][rate]});\n"
                 elif rate == 'EUR-RUB':
-                    msg += f"1 евро     = {rub_rates['rates'][rate]} рублей ({differance[1][rate]} {differance[0][rate]});\n"
+                    msg += f"1 евро      = {rub_rates['rates'][rate]} рублей ({differance[1][rate]} {differance[0][rate]});\n"
                 elif rate == 'RUB-KZT':
                     msg += f"1 рубль    = {rub_rates['rates'][rate]} тенге ({differance[1][rate]} {differance[0][rate]});\n"
                 elif rate == "USD-KZT":
@@ -219,13 +228,13 @@ class DailyMailing:
         return msg
 
     def send_msg(self, msg, silent=True):
-        with open('../data/bot_data.json', encoding='utf-8') as f:
+        with open(pathes['bot_data'], encoding='utf-8') as f:
             data = json.load(f)
         requests.post(url=f'{self.TELEGRAM_BOT_API}{data["Token"]}/sendMessage?chat_id={data["GroupID"]}&disable_notification={silent}&text={msg}')
         print("Cообщение успешно отправилось!")
 
     def get_updates(self):
-        with open('../data/bot_data.json', encoding='utf-8') as f:
+        with open(pathes['bot_data'], encoding='utf-8') as f:
             data = json.load(f)
         response = requests.get(url=f'{self.TELEGRAM_BOT_API}{data["Token"]}/getUpdates').json()
         return response

@@ -320,8 +320,9 @@ async def delete_notify(message: types.Message):
             json.dump(info, file, ensure_ascii=False, indent=4)
             file.truncate()
             msg = 'Оповещение удалено!'
-            aioschedule.clear(str(message.from_user.id))  # Удалить имеющуюся рассылку для юзера из планировщика
-            print(f"Запланированный джоб для {message.from_user.id} удален")
+            userid = str(message.from_user.id)
+            aioschedule.clear(userid)  # Удалить имеющуюся рассылку для юзера из планировщика
+            print(f"Запланированный джоб для {userid} удален")
 
         else:
             msg = 'На вашем аккаунте нет оповещений!'
