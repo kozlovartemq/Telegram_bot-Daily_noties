@@ -34,10 +34,10 @@ async def job(userid: str, dictvalue: dict):
             except Exception:
                 rates = session.get_rates_from_exchangerate(rates_without_btc)
 
-        if rates_without_btc != exchange_rates[1:]:
+        if rates_without_btc != set(exchange_rates[1:]):
             btc = session.parse_btc_rate()
 
-        if isinstance(rates, dict) and isinstance(btc, float):
+        if isinstance(rates, dict) or isinstance(btc, float):
             rate_differance = session.get_differance_in_rates(rates, btc)
             session.save_history_of_rates(rates, btc)
     if weather_forecast[0]:

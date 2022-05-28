@@ -143,14 +143,19 @@ async def add_time(message: types.Message, state):
 
         with open(pathes['users'], 'r+', encoding='utf-8') as file:
             users = json.loads(file.read())
-            users[str(message.from_user.id)]['time'] = message.text
-            file.seek(0)
-            json.dump(users, file, ensure_ascii=False, indent=4)
-            file.truncate()
+            if not str(message.from_user.id) in users.keys():  # Вдруг кто-то прожмет "Принять" до создания оповещения
+                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                keyboard.add('/start')
+                await message.answer("Так делать нельзя! Следуй инструкции, пожалуйста", reply_markup=keyboard)
+            else:
+                users[str(message.from_user.id)]['time'] = message.text
+                file.seek(0)
+                json.dump(users, file, ensure_ascii=False, indent=4)
+                file.truncate()
 
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add('Настроить темы.')
-            await message.answer(f'Время {message.text} установлено.', reply_markup=keyboard)
+                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                keyboard.add('Настроить темы.')
+                await message.answer(f'Время {message.text} установлено.', reply_markup=keyboard)
             await state.finish()
 
 
