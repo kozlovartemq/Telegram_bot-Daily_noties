@@ -10,7 +10,8 @@ from pathlib import Path
 pathes = {
     'weather': f"{str(Path(pathlib.Path.cwd() / 'data' / 'weather_data.json'))}",
     'previous_rates': f"{str(Path(pathlib.Path.cwd() / 'data' / 'previous_rates.json'))}",
-    'bot_data': f"{str(Path(pathlib.Path.cwd() / 'data' / 'bot_data.json'))}"
+    'bot_data': f"{str(Path(pathlib.Path.cwd() / 'data' / 'bot_data.json'))}",
+    'users': f"{str(Path(pathlib.Path.cwd() / 'data' / 'users.json'))}"
 }
 
 
@@ -144,18 +145,31 @@ class DailyMailing:
         return current_weather, forecast_weather, alerts
 
     def get_differance_in_rates(self, rub_rates, btc):
-        with open(pathes['previous_rates'], encoding='utf-8') as f:
-            previous_rates = json.load(f)
-        dif = {'USD-BTC': 0}  # Заполняем нулями для случая, если предыдущие величины не найдены
-        for rate in rub_rates['rates'].keys():
+        with open(pathes['previous_rates'], encoding='utf-8') as f_pr:
+            previous_rates = json.load(f_pr)
+        with open(pathes['users'], encoding='utf-8') as f_u:
+            users = json.load(f_u)
+
+        exchange_rates = users[self.__userid]['topics']['exchange_rates'][1:]
+        rates_without_btc = set(exchange_rates)
+        rates_without_btc.discard("USD-BTC")  # Удалится, если есть
+
+        """Заполняем нулями для случая, если предыдущие величины не найдены"""
+        dif = dict()    #
+        if 'USD-BTC' in exchange_rates:
+            dif['USD-BTC'] = 0
+        for rate in tuple(rates_without_btc):
             dif[rate] = 0
 
+        """Заполняем предыдущими величинами, если есть"""
         if self.__userid in previous_rates.keys():
-            old_rub_rates: dict = previous_rates[self.__userid]['rub_rates']['rates']
-            for rate in rub_rates['rates'].keys():
-                dif[rate] = round(rub_rates['rates'][rate] - old_rub_rates[rate], 2)
-            btc_rate: dict = previous_rates[self.__userid]['btc_rate']
-            dif["USD-BTC"] = round(btc - btc_rate["USD-BTC"], 2)
+            if 'rub_rates' in previous_rates[self.__userid].keys() and isinstance(rub_rates, dict):
+                old_rub_rates: dict = previous_rates[self.__userid]['rub_rates']['rates']
+                for rate in rub_rates['rates'].keys():
+                    dif[rate] = round(rub_rates['rates'][rate] - old_rub_rates[rate], 2)
+            if "btc_rate" in previous_rates[self.__userid].keys() and isinstance(btc, float):
+                btc_rate: dict = previous_rates[self.__userid]['btc_rate']
+                dif["USD-BTC"] = round(btc - btc_rate["USD-BTC"], 2)
 
         emoji = {rate: '\U00002934' if value >= 0.0 else '\U00002935' for rate, value in dif.items()}
         return dif, emoji
