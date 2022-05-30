@@ -127,10 +127,10 @@ async def add_user(message: types.Message, state):
 async def ask_for_time(message: types.Message, again=False):
     await Dialog.time.set()
     if again:
-        await message.answer('Формат указан не верно, попробуй снова назначить время по Красноярскому часовому поясу: МСК+4\n'
+        await message.answer('Формат указан не верно, попробуй снова назначить время по часовому поясу UTC (МСК-3).\n'
                              'Принимается формат ЧЧ:ММ (с 00:00 до 23:59)')
     else:
-        await message.answer('Принял, на какое время назначить оповещение (по Красноярскому часовому поясу: МСК+4)?\n'
+        await message.answer('Принял, на какое время назначить оповещение по часовому поясу UTC (МСК-3)?\n'
                              'Принимается формат ЧЧ:ММ (с 00:00 до 23:59)',
                              reply_markup=types.ReplyKeyboardRemove())
 
