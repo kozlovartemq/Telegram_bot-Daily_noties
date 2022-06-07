@@ -120,18 +120,18 @@ class DailyMailing:
                 current_weather[city].update({'current_desc': onecall['current']['weather'][0]['description']})
                 current_weather[city].update({'current_temp': f"{round(onecall['current']['temp'] - 273, 1)} C"})
                 current_weather[city].update({'current_wind': f"{onecall['current']['wind_speed']} м/с"})
-                current_weather[city].update({'humidity': f"{onecall['current']['humidity']} %"})  # Влажность %
+                current_weather[city].update({'humidity': f"{onecall['current']['humidity']:.0f} %"})  # Влажность %
 
                 forecast_weather[f"{city}"] = {}
                 timestamp = onecall['daily'][0]['dt']
-                dt = str(datetime.fromtimestamp(timestamp))
-                day = f"{dt[8:10]}.{dt[5:7]}.{dt[0:4]}"
+                dt = datetime.fromtimestamp(timestamp)
+                day = f"{dt:%d.%m}"
 
                 forecast_weather[city].update({'day': day})  # timestamp
                 forecast_weather[city].update({'temp': onecall['daily'][0]['temp']})
                 forecast_weather[city].update({'desc': onecall['daily'][0]['weather'][0]['description']})
-                forecast_weather[city].update({'pop': f"{onecall['daily'][0]['pop'] * 100} %"})  # Вероятность осадков %
-                forecast_weather[city].update({'humidity': f"{onecall['daily'][0]['humidity']} %"})  # Влажность %
+                forecast_weather[city].update({'pop': f"{(onecall['daily'][0]['pop'] * 100):.0f} %"})  # Вероятность осадков %
+                forecast_weather[city].update({'humidity': f"{onecall['daily'][0]['humidity']:.0f} %"})  # Влажность %
 
                 alerts[f"{city}"] = {}
                 try:
@@ -216,7 +216,7 @@ class DailyMailing:
 
                 msg += f"\n\n\U0001f3e2Cейчас в {city} {weather[0][city]['current_desc']} {weather[0][f'{city}']['current_temp']}," \
                        f"\nветер {weather[0][city]['current_wind']}, влажность {weather[0][f'{city}']['humidity']}" \
-                       f"\nПрогноз на {weather[1][city]['day'][0:5]}: {weather[1][city]['desc']} -" \
+                       f"\nПрогноз на {weather[1][city]['day']}: {weather[1][city]['desc']} -" \
                        f"\nутром: {weather[1][city]['temp']['morn'] - 273:.1f} C " \
                        f"/ в обед: {weather[1][city]['temp']['day'] - 273:.1f} C" \
                        f"\nвечером: {weather[1][city]['temp']['eve'] - 273:.1f} C " \
@@ -236,8 +236,8 @@ class DailyMailing:
                             end_timestamp = weather[2][city]['alerts'][alert_indx]['end']
                             end_dt = datetime.fromtimestamp(end_timestamp)
 
-                            msg += f"\n\U00002757 C {str(start_dt)[8:10]}.{str(start_dt)[5:7]} {str(start_dt)[11:-3]} до {str(end_dt)[8:10]}.{str(end_dt)[5:7]} {str(end_dt)[11:-3]}" \
-                                   f"\n{weather[2][city]['alerts'][alert_indx]['event']}: {weather[2][city]['alerts'][alert_indx]['description']}" # TODO: format datetime via f''
+                            msg += f"\n\U00002757 C {start_dt:%d.%m %H:%M} до {end_dt:%d.%m %H:%M}" \
+                                   f"\n{weather[2][city]['alerts'][alert_indx]['event']}: {weather[2][city]['alerts'][alert_indx]['description']}"
         elif isinstance(weather, str):
             msg += weather
 
