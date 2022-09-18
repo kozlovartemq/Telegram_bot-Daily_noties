@@ -20,6 +20,7 @@ class DailyMailing:
     ALTERNATIVE_EXCHANGE_RATES_API = 'https://api.exchangerate-api.com/v4/latest/'
     BASE_URL_WEATHER_API = 'http://api.openweathermap.org/data/2.5/'
     BASE_URL_BTC_PARSE = 'https://www.google.com/'
+    BASE_URL_BTC_API = 'https://api.coinstats.app/public/v1/tickers?exchange=yobit&pair=BTC-USD'
     TELEGRAM_BOT_API = 'https://api.telegram.org/bot'
     RANDOM_JOKES_QUOTES = 'http://rzhunemogu.ru/RandJSON.aspx'
 
@@ -37,6 +38,7 @@ class DailyMailing:
             date = f"{response['date'][8:]}.{response['date'][5:7]}.{response['date'][0:4]}"
             rub_usd_rate = round(1 / response['rates']['USD'], 2)
             rub_eur_rate = round(1 / response['rates']['EUR'], 2)
+            rub_cad_rate = round(1 / response['rates']['CAD'], 2)
             kzt_rub_rate = round(response['rates']['KZT'], 2)
             kzt_usd_rate = round(rub_usd_rate * kzt_rub_rate, 2)
         except Exception:
@@ -46,6 +48,8 @@ class DailyMailing:
             result_dict['rates']['USD-RUB'] = rub_usd_rate
         if 'EUR-RUB' in exchange_rates:
             result_dict['rates']['EUR-RUB'] = rub_eur_rate
+        if 'CAD-RUB' in exchange_rates:
+            result_dict['rates']['CAD-RUB'] = rub_cad_rate
         if 'RUB-KZT' in exchange_rates:
             result_dict['rates']['RUB-KZT'] = kzt_rub_rate
         if 'USD-KZT' in exchange_rates:
@@ -56,10 +60,12 @@ class DailyMailing:
     def get_rates_from_exchangerate(self, exchange_rates: set):
         response_usd = requests.get(url=f'{self.ALTERNATIVE_EXCHANGE_RATES_API}USD').json()
         response_eur = requests.get(url=f'{self.ALTERNATIVE_EXCHANGE_RATES_API}EUR').json()
+        response_cad = requests.get(url=f'{self.ALTERNATIVE_EXCHANGE_RATES_API}CAD').json()
         response_rub = requests.get(url=f'{self.ALTERNATIVE_EXCHANGE_RATES_API}RUB').json()
         date = f"{response_usd['date'][8:]}.{response_usd['date'][5:7]}.{response_usd['date'][0:4]}"
         rub_usd_rate = response_usd['rates']['RUB']
         rub_eur_rate = response_eur['rates']['RUB']
+        rub_cad_rate = response_cad['rates']['RUB']
         kzt_rub_rate = response_rub['rates']['KZT']
         kzt_usd_rate = response_usd['rates']['KZT']
         result_dict = dict(date=date, rates=dict())
@@ -67,6 +73,8 @@ class DailyMailing:
             result_dict['rates']['USD-RUB'] = rub_usd_rate
         if 'EUR-RUB' in exchange_rates:
             result_dict['rates']['EUR-RUB'] = rub_eur_rate
+        if 'CAD-RUB' in exchange_rates:
+            result_dict['rates']['EUR-RUB'] = rub_cad_rate
         if 'RUB-KZT' in exchange_rates:
             result_dict['rates']['RUB-KZT'] = kzt_rub_rate
         if 'USD-KZT' in exchange_rates:
@@ -74,7 +82,7 @@ class DailyMailing:
 
         return result_dict
 
-    def parse_btc_rate(self):
+    def parse_btc_rate_google(self):
         try:
             headers = {
                 'Accept': '*/*',
@@ -88,6 +96,18 @@ class DailyMailing:
         except Exception:
             return 'Не удалось получить курс BTC.\n'
         return float_btc
+
+    def parse_btc_rate(self):
+        try:
+            headers = {
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36'
+            }
+            response = requests.get(url=f'{self.BASE_URL_BTC_API}', headers=headers).json()
+            btc_rate = round(float(response["tickers"][0]["price"]), 2)
+        except Exception:
+            return 'Не удалось получить курс BTC.\n'
+        return btc_rate
 
     def save_history_of_rates(self, rub_rates, btc_rate):
         with open(pathes['previous_rates'], 'r+', encoding='utf-8') as file:
@@ -193,6 +213,8 @@ class DailyMailing:
                     msg += f"1 доллар  = {rub_rates['rates'][rate]} рублей ({differance[1][rate]} {differance[0][rate]});\n"
                 elif rate == 'EUR-RUB':
                     msg += f"1 евро      = {rub_rates['rates'][rate]} рублей ({differance[1][rate]} {differance[0][rate]});\n"
+                elif rate == 'CAD-RUB':
+                    msg += f"1 канадский доллар = {rub_rates['rates'][rate]} рублей ({differance[1][rate]} {differance[0][rate]});\n"
                 elif rate == 'RUB-KZT':
                     msg += f"1 рубль    = {rub_rates['rates'][rate]} тенге ({differance[1][rate]} {differance[0][rate]});\n"
                 elif rate == "USD-KZT":
