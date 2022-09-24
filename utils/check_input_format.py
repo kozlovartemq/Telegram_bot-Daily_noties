@@ -22,7 +22,9 @@ def is_string_allowed(text: str) -> bool:
     alp_en_up = set(alp_en.upper())
     alp_ru_set = set(alp_ru)
     alp_ru_up = set(alp_ru.upper())
-    symbols = set('/|\?!.,:()+=_-*&^%$#@; ')
+    symbols = set(""""
+    '/|\?!.,:()+=_-*&^%$#@; "<>«»„“
+    """)
     pattern.update(alp_en_set, alp_en_up, alp_ru_set, alp_ru_up, symbols)
     if set(text).difference(pattern):  # Если в строке есть что-то, помимо паттерна, вернется False
         return False
