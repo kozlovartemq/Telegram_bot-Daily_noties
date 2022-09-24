@@ -26,6 +26,7 @@ class DailyMailing:
 
     def __init__(self, userid):
         self.__userid = userid
+        self.exchange_rates = []
 
     def get_rates(self, exchange_rates: set):
         try:
@@ -167,10 +168,8 @@ class DailyMailing:
     def get_differance_in_rates(self, rub_rates, btc):
         with open(pathes['previous_rates'], encoding='utf-8') as f_pr:
             previous_rates = json.load(f_pr)
-        with open(pathes['users'], encoding='utf-8') as f_u:
-            users = json.load(f_u)
 
-        exchange_rates = users[self.__userid]['topics']['exchange_rates'][1:]
+        exchange_rates = self.exchange_rates
         rates_without_btc = set(exchange_rates)
         rates_without_btc.discard("USD-BTC")  # Удалится, если есть
 

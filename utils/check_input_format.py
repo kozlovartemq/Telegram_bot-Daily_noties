@@ -26,9 +26,8 @@ def is_string_allowed(text: str) -> bool:
     '/|\?!.,:()+=_-*&^%$#@; "<>«»„“
     """)
     pattern.update(alp_en_set, alp_en_up, alp_ru_set, alp_ru_up, symbols)
-    if set(text).difference(pattern):  # Если в строке есть что-то, помимо паттерна, вернется False
-        return False
-    return True
+    # Если в строке есть что-то, помимо паттерна, вернется False
+    return False if set(text).difference(pattern) else True
 
 
 if __name__ == '__main__':

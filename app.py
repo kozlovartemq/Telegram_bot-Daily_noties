@@ -25,7 +25,8 @@ async def job(userid: str, dictvalue: dict):
     rates, btc, rate_differance, weather, rnd_quote = (None,)*5
 
     if exchange_rates[0]:
-        rates_without_btc = set(exchange_rates[1:])
+        session.exchange_rates = exchange_rates[1:]
+        rates_without_btc = set(session.exchange_rates)
         rates_without_btc.discard("USD-BTC")  # Удалится, если есть
 
         if len(rates_without_btc):
