@@ -214,7 +214,7 @@ class DailyMailing:
                 elif rate == 'EUR-RUB':
                     msg += f"1 евро      = {rub_rates['rates'][rate]} рублей ({differance[1][rate]} {differance[0][rate]});\n"
                 elif rate == 'CAD-RUB':
-                    msg += f"1 канадский доллар = {rub_rates['rates'][rate]} рублей ({differance[1][rate]} {differance[0][rate]});\n"
+                    msg += f"1 кан. доллар = {rub_rates['rates'][rate]} рублей ({differance[1][rate]} {differance[0][rate]});\n"
                 elif rate == 'RUB-KZT':
                     msg += f"1 рубль    = {rub_rates['rates'][rate]} тенге ({differance[1][rate]} {differance[0][rate]});\n"
                 elif rate == "USD-KZT":
