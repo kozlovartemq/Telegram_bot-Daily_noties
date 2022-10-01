@@ -21,7 +21,6 @@ class DailyMailing:
     BASE_URL_WEATHER_API = 'http://api.openweathermap.org/data/2.5/'
     BASE_URL_BTC_PARSE = 'https://www.google.com/'
     BASE_URL_BTC_API = 'https://api.coinstats.app/public/v1/tickers?exchange=yobit&pair=BTC-USD'
-    TELEGRAM_BOT_API = 'https://api.telegram.org/bot'
     RANDOM_JOKES_QUOTES = 'http://rzhunemogu.ru/RandJSON.aspx'
 
     def __init__(self, userid):
@@ -169,25 +168,25 @@ class DailyMailing:
         with open(pathes['previous_rates'], encoding='utf-8') as f_pr:
             previous_rates = json.load(f_pr)
 
-        exchange_rates = self.exchange_rates
-        rates_without_btc = set(exchange_rates)
+        rates_without_btc = set(self.exchange_rates)
         rates_without_btc.discard("USD-BTC")  # Удалится, если есть
 
         """Заполняем нулями для случая, если предыдущие величины не найдены"""
         dif = dict()    #
-        if 'USD-BTC' in exchange_rates:
+        if 'USD-BTC' in self.exchange_rates:
             dif['USD-BTC'] = 0
         for rate in tuple(rates_without_btc):
             dif[rate] = 0
 
         """Заполняем предыдущими величинами, если есть"""
-        if self.__userid in previous_rates.keys():
-            if 'rub_rates' in previous_rates[self.__userid].keys() and isinstance(rub_rates, dict):
-                old_rub_rates: dict = previous_rates[self.__userid]['rub_rates']['rates']
+        user_id = str(self.__userid)
+        if user_id in previous_rates.keys():
+            if 'rub_rates' in previous_rates[user_id].keys() and isinstance(rub_rates, dict):
+                old_rub_rates: dict = previous_rates[user_id]['rub_rates']['rates']
                 for rate in rub_rates['rates'].keys():
                     dif[rate] = round(rub_rates['rates'][rate] - old_rub_rates[rate], 2)
-            if "btc_rate" in previous_rates[self.__userid].keys() and isinstance(btc, float):
-                btc_rate: dict = previous_rates[self.__userid]['btc_rate']
+            if "btc_rate" in previous_rates[user_id].keys() and isinstance(btc, float):
+                btc_rate: dict = previous_rates[user_id]['btc_rate']
                 dif["USD-BTC"] = round(btc - btc_rate["USD-BTC"], 2)
 
         emoji = {rate: '\U00002934' if value >= 0.0 else '\U00002935' for rate, value in dif.items()}
@@ -267,14 +266,21 @@ class DailyMailing:
                    f'\n{quote}'
         return msg
 
-    def send_msg(self, msg, silent=True):
-        with open(pathes['bot_data'], encoding='utf-8') as f:
-            data = json.load(f)
-        requests.post(url=f'{self.TELEGRAM_BOT_API}{data["Token"]}/sendMessage?chat_id={data["GroupID"]}&disable_notification={silent}&text={msg}')
-        print("Cообщение успешно отправилось!")
 
-    def get_updates(self):
-        with open(pathes['bot_data'], encoding='utf-8') as f:
-            data = json.load(f)
-        response = requests.get(url=f'{self.TELEGRAM_BOT_API}{data["Token"]}/getUpdates').json()
-        return response
+TELEGRAM_BOT_API = 'https://api.telegram.org/bot'
+with open(pathes['bot_data'], encoding='utf-8') as f:
+    data = json.load(f)
+
+
+def send_msg(msg, chat_id: str, silent=True):
+    requests.post(url=f'{TELEGRAM_BOT_API}{data["Token"]}/sendMessage?chat_id={chat_id}&disable_notification={silent}&text={msg}')
+    print("Cообщение успешно отправилось!")
+
+
+def send_to_admin(msg, silent=True):
+    send_msg(msg=msg, chat_id=data['admin'], silent=silent)
+
+
+def get_updates():
+    response = requests.get(url=f'{TELEGRAM_BOT_API}{data["Token"]}/getUpdates').json()
+    return response
