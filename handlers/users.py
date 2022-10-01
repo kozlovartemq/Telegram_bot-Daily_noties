@@ -1,6 +1,7 @@
 import json
 import pathlib
 from pathlib import Path
+from datetime import datetime
 from aiogram import types
 from aiogram.dispatcher.filters import Text
 import aioschedule
@@ -8,6 +9,7 @@ from loader import dp
 from app import job
 from states.dialog import Dialog
 from utils.check_input_format import is_string_allowed, is_time_allowed
+from utils.notify_mailing import send_to_admin
 
 pathes = {
     'weather': f"{str(Path(pathlib.Path.cwd() / 'data' / 'weather_data.json'))}",
@@ -58,7 +60,7 @@ async def get_feedback(message: types.Message, state):
             feed = ''
             for line in feedbackfile:
                 feed += line
-            feed += f'{message.from_user.id} пишет: \n{message.text}\n\n'
+            feed += f'{message.from_user.id} пишет в {datetime.now()}: \n{message.text}\n\n'
             feedbackfile.seek(0)
             feedbackfile.write(feed)
             feedbackfile.truncate()
@@ -66,7 +68,9 @@ async def get_feedback(message: types.Message, state):
         keyboard.add('/start')
         await message.answer('Спасибо за обратную связь!', reply_markup=keyboard)
         await state.finish()
-        print('NEW FEEDBACK!')
+        print_msg = f'New feedback from user {message.from_user.id}'
+        print(print_msg)
+        send_to_admin(print_msg)
 
 
 @dp.message_handler(Text(equals='Создать оповещение!'))
@@ -199,7 +203,9 @@ async def select_silent(message: types.Message):
         keyboard.add('/start')
         await message.answer(f'Нечего настраивать. Увидимся в указанное время!', reply_markup=keyboard)
         aioschedule.every().day.at(users[userid]['time']).do(job, userid=message.from_user.id, dictvalue=users[userid]).tag(userid)
-        print(f"Джоб для {userid} запланирован")
+        print_msg = f"Джоб для {userid} запланирован"
+        print(print_msg)
+        send_to_admin(print_msg)
 
 
 async def ask_for_topics(message: types.Message, users):
@@ -327,7 +333,10 @@ async def delete_notify(message: types.Message):
             msg = 'Оповещение удалено!'
             userid = str(message.from_user.id)
             aioschedule.clear(userid)  # Удалить имеющуюся рассылку для юзера из планировщика
-            print(f"Запланированный джоб для {userid} удален")
+            print_msg = f"Запланированный джоб для {userid} удален"
+            print(print_msg)
+            send_to_admin(print_msg)
+
 
         else:
             msg = 'На вашем аккаунте нет оповещений!'
