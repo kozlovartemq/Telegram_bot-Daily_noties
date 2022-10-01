@@ -8,7 +8,9 @@ import asyncio
 from aiogram import executor
 import logging
 
-logging.basicConfig(filename='data/error.log', filemode='a', datefmt='%d-%b-%y %H:%M:%S', level=logging.ERROR)
+logging.basicConfig(filename='data/error.log', filemode='a',
+                    format='%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s',
+                    datefmt='%d-%b-%Y %H:%M:%S', level=logging.ERROR)
 
 with open('data/bot_data.json', encoding='utf-8') as datafile:
     data = json.load(datafile)
@@ -35,7 +37,7 @@ async def job(userid: str, dictvalue: dict):
             except Exception:
                 rates = session.get_rates_from_exchangerate(rates_without_btc)
 
-        if rates_without_btc != set(exchange_rates[1:]):
+        if rates_without_btc != set(session.exchange_rates):
             btc = session.parse_btc_rate()
 
         if isinstance(rates, dict) or isinstance(btc, float):
