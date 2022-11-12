@@ -82,7 +82,7 @@ class DailyMailing:
 
         return result_dict
 
-    def parse_btc_rate_google(self):
+    def parse_btc_rate_google_finance(self):
         try:
             headers = {
                 'Accept': '*/*',
@@ -93,6 +93,21 @@ class DailyMailing:
             btc_rate_div = soup.find('div', class_='YMlKec fxKbKc')
             btc_rate = btc_rate_div.text
             float_btc = float(btc_rate.replace(',', ''))
+        except Exception:
+            return 'Не удалось получить курс BTC.\n'
+        return float_btc
+
+    def parse_btc_rate_google(self):
+        try:
+            headers = {
+                'Accept': '*/*',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36'
+            }
+            response = requests.get(url=f'{self.BASE_URL_BTC_PARSE}search?q=btc+usd', headers=headers)
+            soup = BeautifulSoup(response.text, 'lxml')
+            btc_rate_span = soup.find('span', class_="pclqee")
+            btc_rate = btc_rate_span.text
+            float_btc = float(btc_rate.replace(',', '.').replace('\xa0', ''))
         except Exception:
             return 'Не удалось получить курс BTC.\n'
         return float_btc
