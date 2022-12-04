@@ -289,7 +289,7 @@ with open(pathes['bot_data'], encoding='utf-8') as f:
 
 def send_msg(msg, chat_id: str, silent=True):
     requests.post(url=f'{TELEGRAM_BOT_API}{data["Token"]}/sendMessage?chat_id={chat_id}&disable_notification={silent}&text={msg}')
-    print("Cообщение успешно отправилось!")
+    print(f"Cообщение успешно отправилось! ({msg})")
 
 
 def send_to_admin(msg, silent=True):
