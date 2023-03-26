@@ -41,7 +41,8 @@ class DailyMailing:
             rub_cad_rate = round(1 / response['rates']['CAD'], 2)
             kzt_rub_rate = round(response['rates']['KZT'], 2)
             kzt_usd_rate = round(rub_usd_rate * kzt_rub_rate, 2)
-        except Exception:
+        except Exception as ex:
+            logging.exception(f"[get_rates]:\n{ex}")
             return 'Не удалось получить курс валют.\n'
         result_dict = dict(date=date, rates=dict())
         if 'USD-RUB' in exchange_rates:
@@ -58,29 +59,33 @@ class DailyMailing:
         return result_dict
 
     def get_rates_from_exchangerate(self, exchange_rates: set):
-        response_usd = requests.get(url=f'{self.ALTERNATIVE_EXCHANGE_RATES_API}USD').json()
-        response_eur = requests.get(url=f'{self.ALTERNATIVE_EXCHANGE_RATES_API}EUR').json()
-        response_cad = requests.get(url=f'{self.ALTERNATIVE_EXCHANGE_RATES_API}CAD').json()
-        response_rub = requests.get(url=f'{self.ALTERNATIVE_EXCHANGE_RATES_API}RUB').json()
-        date = f"{response_usd['date'][8:]}.{response_usd['date'][5:7]}.{response_usd['date'][0:4]}"
-        rub_usd_rate = response_usd['rates']['RUB']
-        rub_eur_rate = response_eur['rates']['RUB']
-        rub_cad_rate = response_cad['rates']['RUB']
-        kzt_rub_rate = response_rub['rates']['KZT']
-        kzt_usd_rate = response_usd['rates']['KZT']
-        result_dict = dict(date=date, rates=dict())
-        if 'USD-RUB' in exchange_rates:
-            result_dict['rates']['USD-RUB'] = rub_usd_rate
-        if 'EUR-RUB' in exchange_rates:
-            result_dict['rates']['EUR-RUB'] = rub_eur_rate
-        if 'CAD-RUB' in exchange_rates:
-            result_dict['rates']['EUR-RUB'] = rub_cad_rate
-        if 'RUB-KZT' in exchange_rates:
-            result_dict['rates']['RUB-KZT'] = kzt_rub_rate
-        if 'USD-KZT' in exchange_rates:
-            result_dict['rates']['USD-KZT'] = kzt_usd_rate
+        try:
+            response_usd = requests.get(url=f'{self.ALTERNATIVE_EXCHANGE_RATES_API}USD').json()
+            response_eur = requests.get(url=f'{self.ALTERNATIVE_EXCHANGE_RATES_API}EUR').json()
+            response_cad = requests.get(url=f'{self.ALTERNATIVE_EXCHANGE_RATES_API}CAD').json()
+            response_rub = requests.get(url=f'{self.ALTERNATIVE_EXCHANGE_RATES_API}RUB').json()
+            date = f"{response_usd['date'][8:]}.{response_usd['date'][5:7]}.{response_usd['date'][0:4]}"
+            rub_usd_rate = response_usd['rates']['RUB']
+            rub_eur_rate = response_eur['rates']['RUB']
+            rub_cad_rate = response_cad['rates']['RUB']
+            kzt_rub_rate = response_rub['rates']['KZT']
+            kzt_usd_rate = response_usd['rates']['KZT']
+            result_dict = dict(date=date, rates=dict())
+            if 'USD-RUB' in exchange_rates:
+                result_dict['rates']['USD-RUB'] = rub_usd_rate
+            if 'EUR-RUB' in exchange_rates:
+                result_dict['rates']['EUR-RUB'] = rub_eur_rate
+            if 'CAD-RUB' in exchange_rates:
+                result_dict['rates']['EUR-RUB'] = rub_cad_rate
+            if 'RUB-KZT' in exchange_rates:
+                result_dict['rates']['RUB-KZT'] = kzt_rub_rate
+            if 'USD-KZT' in exchange_rates:
+                result_dict['rates']['USD-KZT'] = kzt_usd_rate
 
-        return result_dict
+            return result_dict
+        except Exception as ex:
+            logging.exception(f"[get_rates_from_exchangerate]:\n{ex}")
+            return 'Не удалось получить курс валют.\n'
 
     def parse_btc_rate_google_finance(self):
         try:
@@ -93,7 +98,8 @@ class DailyMailing:
             btc_rate_div = soup.find('div', class_='YMlKec fxKbKc')
             btc_rate = btc_rate_div.text
             float_btc = float(btc_rate.replace(',', ''))
-        except Exception:
+        except Exception as ex:
+            logging.exception(f"[parse_btc_rate_google_finance]:\n{ex}")
             return 'Не удалось получить курс BTC.\n'
         return float_btc
 
@@ -108,7 +114,8 @@ class DailyMailing:
             btc_rate_span = soup.find('span', class_="pclqee")
             btc_rate = btc_rate_span.text
             float_btc = float(btc_rate.replace(',', '.').replace('\xa0', ''))
-        except Exception:
+        except Exception as ex:
+            logging.exception(f"[parse_btc_rate_google]:\n{ex}")
             return 'Не удалось получить курс BTC.\n'
         return float_btc
 
@@ -120,7 +127,8 @@ class DailyMailing:
             }
             response = requests.get(url=f'{self.BASE_URL_BTC_API}', headers=headers).json()
             btc_rate = round(float(response["tickers"][0]["price"]), 2)
-        except Exception:
+        except Exception as ex:
+            logging.exception(f"[parse_btc_rate]:\n{ex}")
             return 'Не удалось получить курс BTC.\n'
         return btc_rate
 
@@ -173,10 +181,9 @@ class DailyMailing:
                     alerts[f"{city}"].update({'alerts': onecall['alerts']})
                 except:
                     alerts[f"{city}"].update({'alerts': [None]})
-            except Exception:
-                err_msg = 'Не удалось получить прогноз погоды.\n'
-                logging.exception(err_msg)
-                return err_msg
+            except Exception as ex:
+                logging.exception(f"[get_api_weather]:\n{ex}")
+                return 'Не удалось получить прогноз погоды.\n'
         return current_weather, forecast_weather, alerts
 
     def get_differance_in_rates(self, rub_rates, btc):
@@ -211,7 +218,8 @@ class DailyMailing:
         try:
             response = requests.get(url=f'{self.RANDOM_JOKES_QUOTES}?CType=4').json(strict=False)
             return response['content']
-        except Exception:
+        except Exception as ex:
+            logging.exception(f"[get_random_quote]:\n{ex}")
             return "Не удалось получить цитату :("
 
     @staticmethod

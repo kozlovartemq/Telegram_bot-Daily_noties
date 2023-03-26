@@ -34,6 +34,7 @@ async def job(userid: str, dictvalue: dict):
         if len(rates_without_btc):
             try:
                 rates = session.get_rates(rates_without_btc)
+                assert isinstance(rates, dict)
             except Exception:
                 rates = session.get_rates_from_exchangerate(rates_without_btc)
 
