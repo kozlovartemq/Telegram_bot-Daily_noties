@@ -24,7 +24,7 @@ async def job(userid: str, dictvalue: dict):
     quote = dictvalue['topics']['quote']
     session = DailyMailing(userid)
     msg = f'Здравствуйте, {alias}!\n'
-    rates, btc, rate_differance, weather, rnd_quote = (None,)*5
+    rates, btc, rate_differance, weather, air_pollution, rnd_quote = (None,)*6
 
     if exchange_rates[0]:
         session.exchange_rates = exchange_rates[1:]
@@ -46,10 +46,11 @@ async def job(userid: str, dictvalue: dict):
             session.save_history_of_rates(rates, btc)
     if weather_forecast[0]:
         weather = session.get_api_weather(weather_forecast[1:])
+        air_pollution = session.parse_air_pollution(weather_forecast[1:])
     if quote[0]:
         rnd_quote = session.get_random_quote()
     try:
-        msg += session.create_msg(rates, btc, rate_differance, weather, rnd_quote)
+        msg += session.create_msg(rates, btc, rate_differance, weather, air_pollution, rnd_quote)
         requests.post(
             url=f'https://api.telegram.org/bot{data["Token"]}/sendMessage?chat_id={userid}&disable_notification={silent}&text={msg}')
         print(f'Оповещение {userid} отправлено в {dictvalue["time"]}')

@@ -22,6 +22,7 @@ class DailyMailing:
     BASE_URL_BTC_PARSE = 'https://www.google.com/'
     BASE_URL_BTC_API = 'https://api.coinstats.app/public/v1/tickers?exchange=yobit&pair=BTC-USD'
     RANDOM_JOKES_QUOTES = 'http://rzhunemogu.ru/RandJSON.aspx'
+    BASE_URL_AIR_POLLUTION = 'https://nebo.live/ru/'
 
     def __init__(self, userid):
         self.__userid = userid
@@ -186,6 +187,34 @@ class DailyMailing:
                 return 'Не удалось получить прогноз погоды.\n'
         return current_weather, forecast_weather, alerts
 
+    def parse_air_pollution(self, cities: list):
+        air_pollution_values = {}
+        for city in cities:
+            try:
+                sensors = {
+                    'Krasnoyarsk': 'krs/sensors/ulitsa-petra-lomako-14',
+                    'Novosibirsk': 'novosibirsk/sensors/sibrevcom-street-71',
+                    'Moscow': 'moscow/sensors/zvyozdnyi-bulvar-4',
+                    'Nur-Sultan': ''
+                }
+                if not sensors[city]:
+                    air_pollution_values[city] = ''
+                    continue
+                headers = {
+                    'Accept': '*/*',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36'
+                }
+                response = requests.get(url=f'{self.BASE_URL_AIR_POLLUTION}{sensors[city]}', headers=headers)
+                soup = BeautifulSoup(response.text, 'lxml')
+                pm2_5 = soup.find('table').find('tr').find_all('td')[1]
+                pm25_text = pm2_5.text
+                float_pm25 = float(pm25_text.rstrip().split()[0])
+                air_pollution_values[city] = float_pm25
+            except Exception as ex:
+                logging.exception(f"[get_air_pollution]:\n{ex}")
+                air_pollution_values[city] = ''
+        return air_pollution_values
+
     def get_differance_in_rates(self, rub_rates, btc):
         with open(pathes['previous_rates'], encoding='utf-8') as f_pr:
             previous_rates = json.load(f_pr)
@@ -223,7 +252,7 @@ class DailyMailing:
             return "Не удалось получить цитату :("
 
     @staticmethod
-    def create_msg(rub_rates, btc, differance, weather, quote):
+    def create_msg(rub_rates, btc, differance, weather, air_pollution, quote):
         # emoji_up_down = ['\U00002934' if differance[1][i] == '+' else '\U00002935' for i in range(len(differance[1]))]
         msg = ''
         if isinstance(rub_rates, dict):
@@ -249,13 +278,16 @@ class DailyMailing:
             msg += btc  # 'Не удалось получить курс BTC.\n'
 
         if isinstance(weather, tuple):
+            reacton_emojes = {
+                'innocent': '\U0001f607',  # <= 10
+                'neutral_face': '\U0001f610',  # 10 < x <= 35
+                'grimacing': '\U0001f62c',  # 35 < x <= 60
+                'face_with_symbols': '\U0001f92c',  # 60 < x <= 150
+                'skull_bones': '\U00002620'  # > 150
+            }
             msg += "\nПогода:"
 
-            cities = []
             for city in weather[0].keys():
-                cities.append(city)
-
-            for city in cities:
 
                 msg += f"\n\n\U0001f3e2Cейчас в {city} {weather[0][city]['current_desc']} {weather[0][f'{city}']['current_temp']}," \
                        f"\nветер {weather[0][city]['current_wind']}, влажность {weather[0][f'{city}']['humidity']}" \
@@ -281,6 +313,22 @@ class DailyMailing:
 
                             msg += f"\n\U00002757 C {start_dt:%d.%m %H:%M} до {end_dt:%d.%m %H:%M}" \
                                    f"\n{weather[2][city]['alerts'][alert_indx]['event']}: {weather[2][city]['alerts'][alert_indx]['description']}"
+
+                pollution_value = air_pollution[city]
+                if isinstance(pollution_value, float):
+                    if pollution_value <= 10:
+                        emoji = reacton_emojes['innocent']
+                    elif 10 < pollution_value <= 35:
+                        emoji = reacton_emojes['neutral_face']
+                    elif 35 < pollution_value <= 60:
+                        emoji = reacton_emojes['grimacing']
+                    elif 60 < pollution_value <= 150:
+                        emoji = reacton_emojes['face_with_symbols']
+                    else:
+                        emoji = reacton_emojes['skull_bones']
+                    msg += f'\nУровень загрязнения воздуха (PM2.5)' \
+                           f'\nв данный момент: {air_pollution[city]} µg/m3 {emoji}'
+
         elif isinstance(weather, str):
             msg += weather
 
