@@ -24,8 +24,8 @@ class DailyMailing:
     RANDOM_JOKES_QUOTES = 'http://rzhunemogu.ru/RandJSON.aspx'
     BASE_URL_AIR_POLLUTION = 'https://nebo.live/ru/'
 
-    def __init__(self, userid):
-        self.__userid = userid
+    def __init__(self, userid: str):
+        self.__userid: str = userid
         self.exchange_rates = []
 
     def get_rates(self, exchange_rates: set):
@@ -77,7 +77,7 @@ class DailyMailing:
             if 'EUR-RUB' in exchange_rates:
                 result_dict['rates']['EUR-RUB'] = rub_eur_rate
             if 'CAD-RUB' in exchange_rates:
-                result_dict['rates']['EUR-RUB'] = rub_cad_rate
+                result_dict['rates']['CAD-RUB'] = rub_cad_rate
             if 'RUB-KZT' in exchange_rates:
                 result_dict['rates']['RUB-KZT'] = kzt_rub_rate
             if 'USD-KZT' in exchange_rates:
@@ -355,3 +355,9 @@ def send_to_admin(msg, silent=True):
 def get_updates():
     response = requests.get(url=f'{TELEGRAM_BOT_API}{data["Token"]}/getUpdates').json()
     return response
+
+
+if __name__ == "__main__":
+    ses = DailyMailing("23")
+    a = ses.get_rates_from_exchangerate({'USD-RUB', 'EUR-RUB', 'CAD-RUB', 'RUB-KZT', 'USD-KZT'})
+    print(a)

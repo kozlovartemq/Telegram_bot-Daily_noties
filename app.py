@@ -32,10 +32,8 @@ async def job(userid: str, dictvalue: dict):
         rates_without_btc.discard("USD-BTC")  # Удалится, если есть
 
         if len(rates_without_btc):
-            try:
-                rates = session.get_rates(rates_without_btc)
-                assert isinstance(rates, dict)
-            except Exception:
+            rates = session.get_rates(rates_without_btc)
+            if not isinstance(rates, dict):
                 rates = session.get_rates_from_exchangerate(rates_without_btc)
 
         if rates_without_btc != set(session.exchange_rates):
