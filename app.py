@@ -44,7 +44,7 @@ async def job(userid: str, dictvalue: dict):
             session.save_history_of_rates(rates, btc)
     if weather_forecast[0]:
         weather = session.get_api_weather(weather_forecast[1:])
-        air_pollution = session.parse_air_pollution(weather_forecast[1:])
+        air_pollution = session.get_air_pollution(weather_forecast[1:])
     if quote[0]:
         rnd_quote = session.get_random_quote()
     try:

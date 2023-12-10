@@ -2,18 +2,22 @@
   "Cities": ["Krasnoyarsk", "Novosibirsk", "Moscow", "Nur-Sultan"],
   "Krasnoyarsk": {
     "lat": 56.010,
-    "lon": 92.792
+    "lon": 92.792,
+    "nebo_url": "krs"
   },
   "Novosibirsk": {
     "lat": 55.041,
-    "lon": 82.934
+    "lon": 82.934,
+    "nebo_url": "novosibirsk"
   },
   "Moscow": {
     "lat": 55.752,
-    "lon": 37.6156
+    "lon": 37.6156,
+    "nebo_url": "moscow"
   },
   "Nur-Sultan": {
     "lat": 51.180,
-    "lon": 71.500
+    "lon": 71.500,
+    "nebo_url": "astana"
   }
 }

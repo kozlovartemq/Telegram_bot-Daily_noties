@@ -23,6 +23,7 @@ class DailyMailing:
     BASE_URL_BTC_API = 'https://api.coinstats.app/public/v1/tickers?exchange=yobit&pair=BTC-USD'
     RANDOM_JOKES_QUOTES = 'http://rzhunemogu.ru/RandJSON.aspx'
     BASE_URL_AIR_POLLUTION = 'https://nebo.live/ru/'
+    BASE_URL_NEBO_API = 'https://nebo.live/api/v2/en/'
 
     def __init__(self, userid: str):
         self.__userid: str = userid
@@ -180,10 +181,10 @@ class DailyMailing:
                 alerts[f"{city}"] = {}
                 try:
                     alerts[f"{city}"].update({'alerts': onecall['alerts']})
-                except:
+                except Exception:
                     alerts[f"{city}"].update({'alerts': [None]})
-            except Exception as ex:
-                logging.exception(f"[get_api_weather]:\n{ex}")
+            except Exception as ex1:
+                logging.exception(f"[get_api_weather]:\n{ex1}")
                 return 'Не удалось получить прогноз погоды.\n'
         return current_weather, forecast_weather, alerts
 
@@ -211,8 +212,33 @@ class DailyMailing:
                 float_pm25 = float(pm25_text.rstrip().split()[0])
                 air_pollution_values[city] = float_pm25
             except Exception as ex:
-                logging.exception(f"[get_air_pollution]:\n{ex}")
+                logging.exception(f"[parse_air_pollution]:\n{ex}")
                 air_pollution_values[city] = ''
+        return air_pollution_values
+
+    def get_air_pollution(self, cities: list):
+        import hashlib
+
+        air_pollution_values = {}
+        with open(pathes['weather']) as f:
+            weather_json = json.load(f)
+        with open(pathes['bot_data'], encoding='utf-8') as f:
+            bot_data = json.load(f)
+
+        timestamp_str = str(datetime.now().replace(microsecond=0).timestamp())[:-2]
+        url_hash = hashlib.sha1((timestamp_str + bot_data["nebo_code"]).encode('utf-8')).hexdigest()[5:16]
+        for city in cities:
+            try:
+                avg_instant_pm25 = ''
+                response = requests.get(f'{self.BASE_URL_NEBO_API}cities/{weather_json[city]["nebo_url"]}?time={timestamp_str}&hash={url_hash}',
+                                        headers={'X-Auth-Nebo': bot_data["nebo_token"]}).json()
+                pm25 = [item['instant']['pm25'] for item in response if item['instant']['pm25'] is not None]
+
+                if len(pm25):
+                    avg_instant_pm25 = round(sum(pm25) / len(pm25), 1)
+            except Exception as ex:
+                logging.exception(f"[get_api_weather]:\n{ex}")
+            air_pollution_values.update({city: avg_instant_pm25})
         return air_pollution_values
 
     def get_differance_in_rates(self, rub_rates, btc):
@@ -278,7 +304,7 @@ class DailyMailing:
             msg += btc  # 'Не удалось получить курс BTC.\n'
 
         if isinstance(weather, tuple):
-            reacton_emojes = {
+            reaction_emojes = {
                 'innocent': '\U0001f607',  # <= 10
                 'neutral_face': '\U0001f610',  # 10 < x <= 35
                 'grimacing': '\U0001f62c',  # 35 < x <= 60
@@ -317,17 +343,17 @@ class DailyMailing:
                 pollution_value = air_pollution[city]
                 if isinstance(pollution_value, float):
                     if pollution_value <= 10:
-                        emoji = reacton_emojes['innocent']
+                        emoji = reaction_emojes['innocent']
                     elif 10 < pollution_value <= 35:
-                        emoji = reacton_emojes['neutral_face']
+                        emoji = reaction_emojes['neutral_face']
                     elif 35 < pollution_value <= 60:
-                        emoji = reacton_emojes['grimacing']
+                        emoji = reaction_emojes['grimacing']
                     elif 60 < pollution_value <= 150:
-                        emoji = reacton_emojes['face_with_symbols']
+                        emoji = reaction_emojes['face_with_symbols']
                     else:
-                        emoji = reacton_emojes['skull_bones']
+                        emoji = reaction_emojes['skull_bones']
                     msg += f'\nУровень загрязнения воздуха (PM2.5)' \
-                           f'\nв данный момент: {air_pollution[city]} µg/m3 {emoji}'
+                           f'\nв данный момент: {pollution_value} µg/m3 {emoji}'
 
         elif isinstance(weather, str):
             msg += weather
@@ -360,4 +386,5 @@ def get_updates():
 if __name__ == "__main__":
     ses = DailyMailing("23")
     a = ses.get_rates_from_exchangerate({'USD-RUB', 'EUR-RUB', 'CAD-RUB', 'RUB-KZT', 'USD-KZT'})
-    print(a)
+    b = ses.get_air_pollution(["Krasnoyarsk", "Novosibirsk", "Moscow", "Nur-Sultan"])
+    # pprint(b, indent=4)
