@@ -46,7 +46,9 @@ async def job(userid: str, dictvalue: dict):
         weather = session.get_api_weather(weather_forecast[1:])
         air_pollution = session.get_air_pollution(weather_forecast[1:])
     if quote[0]:
-        rnd_quote = session.get_random_quote()
+        # rnd_quote = session.get_random_quote()
+        # trying random fact instead of quote as BETA
+        rnd_quote = session.parse_random_fact()
     try:
         msg += session.create_msg(rates, btc, rate_differance, weather, air_pollution, rnd_quote)
         requests.post(

@@ -24,6 +24,7 @@ class DailyMailing:
     RANDOM_JOKES_QUOTES = 'http://rzhunemogu.ru/RandJSON.aspx'
     BASE_URL_AIR_POLLUTION = 'https://nebo.live/ru/'
     BASE_URL_NEBO_API = 'https://nebo.live/api/v2/en/'
+    BASE_URL_FACT_PARSE = 'https://randstuff.ru/fact/'
 
     def __init__(self, userid: str):
         self.__userid: str = userid
@@ -228,8 +229,8 @@ class DailyMailing:
         timestamp_str = str(datetime.now().replace(microsecond=0).timestamp())[:-2]
         url_hash = hashlib.sha1((timestamp_str + bot_data["nebo_code"]).encode('utf-8')).hexdigest()[5:16]
         for city in cities:
+            avg_instant_pm25 = ''
             try:
-                avg_instant_pm25 = ''
                 response = requests.get(f'{self.BASE_URL_NEBO_API}cities/{weather_json[city]["nebo_url"]}?time={timestamp_str}&hash={url_hash}',
                                         headers={'X-Auth-Nebo': bot_data["nebo_token"]}).json()
                 pm25 = [item['instant']['pm25'] for item in response if item['instant']['pm25'] is not None]
@@ -276,6 +277,21 @@ class DailyMailing:
         except Exception as ex:
             logging.exception(f"[get_random_quote]:\n{ex}")
             return "Не удалось получить цитату :("
+
+    def parse_random_fact(self):
+        try:
+            headers = {
+                'Accept': '*/*',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36'
+            }
+            response = requests.get(url=self.BASE_URL_FACT_PARSE, headers=headers)
+            soup = BeautifulSoup(response.text, 'lxml')
+            table = soup.find('table', class_='text')
+            fact = table.text
+        except Exception as ex:
+            logging.exception(f"[parse_random_fact]:\n{ex}")
+            return 'Не удалось получить факт.\n'
+        return fact
 
     @staticmethod
     def create_msg(rub_rates, btc, differance, weather, air_pollution, quote):
@@ -352,14 +368,14 @@ class DailyMailing:
                         emoji = reaction_emojes['face_with_symbols']
                     else:
                         emoji = reaction_emojes['skull_bones']
-                    msg += f'\nУровень загрязнения воздуха (PM2.5)' \
+                    msg += f'\n\U00002757 Уровень загрязнения воздуха (PM2.5)' \
                            f'\nв данный момент: {pollution_value} µg/m3 {emoji}'
 
         elif isinstance(weather, str):
             msg += weather
 
         if quote is not None:
-            msg += f'\n\nСегодняшняя цитата для Вас:' \
+            msg += f'\n\nСегодняшний факт для Вас:' \
                    f'\n{quote}'
         return msg
 
@@ -387,4 +403,6 @@ if __name__ == "__main__":
     ses = DailyMailing("23")
     a = ses.get_rates_from_exchangerate({'USD-RUB', 'EUR-RUB', 'CAD-RUB', 'RUB-KZT', 'USD-KZT'})
     b = ses.get_air_pollution(["Krasnoyarsk", "Novosibirsk", "Moscow", "Nur-Sultan"])
-    # pprint(b, indent=4)
+    c = ses.get_api_weather(["Krasnoyarsk", "Novosibirsk", "Moscow", "Nur-Sultan"])
+    d = ses.parse_random_fact()
+    print(c)
