@@ -337,7 +337,6 @@ async def delete_notify(message: types.Message):
             print(print_msg)
             send_to_admin(print_msg)
 
-
         else:
             msg = 'На вашем аккаунте нет оповещений!'
         buttons = ['Создать оповещение!', 'Обратная связь']

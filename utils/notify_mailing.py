@@ -18,9 +18,9 @@ pathes = {
 class DailyMailing:
     RUB_URL = 'https://www.cbr-xml-daily.ru/latest.js'
     ALTERNATIVE_EXCHANGE_RATES_API = 'https://api.exchangerate-api.com/v4/latest/'
-    BASE_URL_WEATHER_API = 'http://api.openweathermap.org/data/2.5/'
+    BASE_URL_WEATHER_API = 'http://api.openweathermap.org/data/3.0/'
     BASE_URL_BTC_PARSE = 'https://www.google.com/'
-    BASE_URL_BTC_API = 'https://api.coinstats.app/public/v1/tickers?exchange=yobit&pair=BTC-USD'
+    BASE_URL_BTC_API = 'https://openapiv1.coinstats.app'
     RANDOM_JOKES_QUOTES = 'http://rzhunemogu.ru/RandJSON.aspx'
     BASE_URL_AIR_POLLUTION = 'https://nebo.live/ru/'
     BASE_URL_NEBO_API = 'https://nebo.live/api/v2/en/'
@@ -124,12 +124,14 @@ class DailyMailing:
 
     def parse_btc_rate(self):
         try:
+            with open(pathes['bot_data'], encoding='utf-8') as f:
+                bot_data = json.load(f)
             headers = {
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36'
+                'Accept': 'application/json',
+                'X-API-KEY': bot_data['API_Coinstat_key']
             }
-            response = requests.get(url=f'{self.BASE_URL_BTC_API}', headers=headers).json()
-            btc_rate = round(float(response["tickers"][0]["price"]), 2)
+            response = requests.get(url=f'{self.BASE_URL_BTC_API}/coins/bitcoin?currency=USD', headers=headers).json()
+            btc_rate = round(response["price"], 2)
         except Exception as ex:
             logging.exception(f"[parse_btc_rate]:\n{ex}")
             return 'Не удалось получить курс BTC.\n'
@@ -160,30 +162,86 @@ class DailyMailing:
             bot_data = json.load(f)
         for city in cities:
             try:
-                onecall = requests.get(
-                    url=f"{self.BASE_URL_WEATHER_API}onecall?lat={weather_json[city]['lat']}&lon={weather_json[city]['lon']}&exclude=minutely,hourly&appid={bot_data['API_Key_weather']}&lang=ru").json()
+                ya_pogoda = requests.get(url=f"https://api.weather.yandex.ru/v2/forecast?lat={weather_json[city]['lat']}&{weather_json[city]['lon']}&lang=ru_RU&limit=2",
+                                         headers={'X-Yandex-Weather-Key': bot_data['API_Yapogoda_key']}).json()
+                ya_pogoda_fact = ya_pogoda['fact']
+                desc_map = {
+                    'clear': 'ясно',
+                    'partly-cloudy': 'малооблачно',
+                    'cloudy': 'облачно с прояснениями',
+                    'overcast': 'пасмурно',
+                    'light-rain': 'небольшой дождь',
+                    'rain': 'дождь',
+                    'heavy-rain': 'сильный дождь',
+                    'showers': 'ливень',
+                    'wet-snow': 'дождь со снегом',
+                    'light-snow': 'небольшой дождь',
+                    'snow': 'снег',
+                    'snow-showers': 'снегопад',
+                    'hail': 'град',
+                    'thunderstorm': 'гроза',
+                    'thunderstorm-with-rain': 'дождь с грозой',
+                    'thunderstorm-with-hail': 'гроза с градом',
+                }
+                phenom_desc = {
+                    'fog': 'туман',
+                    'mist': 'дымка',
+                    'smoke': 'смог',
+                    'dust': 'пыль',
+                    'dust-suspension': 'пылевая взвесь',
+                    'duststorm': 'пыльная буря',
+                    'thunderstorm-with-duststorm': 'пыльная буря с грозой',
+                    'drifting-snow': 'слабая метель',
+                    'blowing-snow': 'метель',
+                    'ice-pellets': 'ледяная крупа',
+                    'freezing-rain': 'ледяной дождь',
+                    'tornado': 'торнадо',
+                    'volcanic-ash': 'вулканический пепел',
+                }
                 current_weather[city] = {}
-                current_weather[city].update({'current_desc': onecall['current']['weather'][0]['description']})
-                current_weather[city].update({'current_temp': f"{round(onecall['current']['temp'] - 273, 1)} C"})
-                current_weather[city].update({'current_wind': f"{onecall['current']['wind_speed']} м/с"})
-                current_weather[city].update({'humidity': f"{onecall['current']['humidity']:.0f} %"})  # Влажность %
+                current_weather[city].update({'condition': desc_map.get(ya_pogoda_fact['condition'], ya_pogoda_fact['condition'])})
+                current_weather[city].update({'phenom_condition': phenom_desc.get(ya_pogoda_fact.get('phenom_condition'))})
+                current_weather[city].update({'temp': ya_pogoda_fact['temp']})
+                current_weather[city].update({'wind_speed': ya_pogoda_fact['wind_speed']})
+                current_weather[city].update({'wind_gust': ya_pogoda_fact['wind_gust']})
 
-                forecast_weather[f"{city}"] = {}
-                timestamp = onecall['daily'][0]['dt']
-                dt = datetime.fromtimestamp(timestamp)
-                day = f"{dt:%d.%m}"
+                ya_pogoda_forecast = ya_pogoda['forecasts'][0]
+                ya_pogoda_forecast2 = ya_pogoda['forecasts'][1]  # for the next night
+                forecast_weather[city] = {}
+                forecast_weather[city].update({'date': ya_pogoda_forecast['date']})
+                forecast_weather[city].update({'sunrise': ya_pogoda_forecast['sunrise']})
+                forecast_weather[city].update({'sunset': ya_pogoda_forecast['sunset']})
+                forecast_weather[city].update({'day': ya_pogoda_forecast['parts']['day']})
+                day_condition = forecast_weather[city]['day']['condition']
+                forecast_weather[city]['day'].update({'condition': desc_map.get(day_condition, day_condition)})
 
-                forecast_weather[city].update({'day': day})  # timestamp
-                forecast_weather[city].update({'temp': onecall['daily'][0]['temp']})
-                forecast_weather[city].update({'desc': onecall['daily'][0]['weather'][0]['description']})
-                forecast_weather[city].update({'pop': f"{(onecall['daily'][0]['pop'] * 100):.0f} %"})  # Вероятность осадков %
-                forecast_weather[city].update({'humidity': f"{onecall['daily'][0]['humidity']:.0f} %"})  # Влажность %
+                forecast_weather[city].update({'morning': ya_pogoda_forecast['parts']['morning']})
+                morning_condition = forecast_weather[city]['morning']['condition']
+                forecast_weather[city]['morning'].update({'condition': desc_map.get(morning_condition, morning_condition)})
 
-                alerts[f"{city}"] = {}
-                try:
-                    alerts[f"{city}"].update({'alerts': onecall['alerts']})
-                except Exception:
-                    alerts[f"{city}"].update({'alerts': [None]})
+                forecast_weather[city].update({'night': ya_pogoda_forecast2['parts']['night']})
+                night_condition = forecast_weather[city]['night']['condition']
+                forecast_weather[city]['night'].update({'condition': desc_map.get(night_condition, night_condition)})
+
+                alerts[city] = {}
+                if city == 'Krasnoyarsk':
+                    try:
+                        alerts_response = requests.post(url=f"https://meteoinfo.ru/hmc-output/meteoalert/map_fed_data.php", data=dict(id_fed='7', type='0-24', id_lang='1')).json()
+                        alerts[city].update({'alerts': list(alerts_response['87'].values())})
+                    except Exception:
+                        alerts[city].update({'alerts': [None]})
+                elif city == 'Novosibirsk':
+                    try:
+                        alerts_response = requests.post(url=f"https://meteoinfo.ru/hmc-output/meteoalert/map_fed_data.php", data=dict(id_fed='7', type='0-24', id_lang='1')).json()
+                        alerts[city].update({'alerts': list(alerts_response['46'].values())})
+                    except Exception:
+                        alerts[city].update({'alerts': [None]})
+                elif city == 'Moscow':
+                    try:
+                        alerts_response = requests.post(url=f"https://meteoinfo.ru/hmc-output/meteoalert/map_fed_data.php", data=dict(id_fed='1', type='0-24', id_lang='1')).json()
+                        alerts[city].update({'alerts': list(alerts_response['102'].values())})
+                    except Exception:
+                        alerts[city].update({'alerts': [None]})
             except Exception as ex1:
                 logging.exception(f"[get_api_weather]:\n{ex1}")
                 return 'Не удалось получить прогноз погоды.\n'
@@ -331,30 +389,29 @@ class DailyMailing:
 
             for city in weather[0].keys():
 
-                msg += f"\n\n\U0001f3e2Cейчас в {city} {weather[0][city]['current_desc']} {weather[0][f'{city}']['current_temp']}," \
-                       f"\nветер {weather[0][city]['current_wind']}, влажность {weather[0][f'{city}']['humidity']}" \
-                       f"\nПрогноз на {weather[1][city]['day']}: {weather[1][city]['desc']} -" \
-                       f"\nутром: {weather[1][city]['temp']['morn'] - 273:.1f} C " \
-                       f"/ в обед: {weather[1][city]['temp']['day'] - 273:.1f} C" \
-                       f"\nвечером: {weather[1][city]['temp']['eve'] - 273:.1f} C " \
-                       f"/ ночью: {weather[1][city]['temp']['night'] - 273:.1f} C " \
-                       f"\nВлажн.: {weather[1][city]['humidity']}, вер-ть осадков {weather[1][city]['pop']}"
+                msg += f"\n\n\U0001f3e2Cейчас в {city} {weather[0][city]['condition']} {'('+weather[0][city]['phenom_condition']+')' if weather[0][city]['phenom_condition'] else ''} {weather[0][f'{city}']['temp']} C," \
+                       f"\nветер {weather[0][city]['wind_speed']} м/с с порывами до {weather[0][city]['wind_gust']} м/с." \
+                       f"\nПрогноз на {weather[1][city]['date']}:" \
+                       f"\nВосход-закат {weather[1][city]['sunrise']}-{weather[1][city]['sunset']}" \
+                       f"\nутром: {weather[1][city]['morning']['condition']} {weather[1][city]['morning']['temp_min']} C, ветер {weather[1][city]['morning']['wind_speed']}({weather[1][city]['morning']['wind_gust']}) м/с" \
+                       f"\nв обед: {weather[1][city]['day']['condition']} {weather[1][city]['day']['temp_min']} C, ветер {weather[1][city]['day']['wind_speed']}({weather[1][city]['day']['wind_gust']}) м/с" \
+                       f"\nночью: {weather[1][city]['night']['condition']} {weather[1][city]['night']['temp_min']} C, ветер {weather[1][city]['night']['wind_speed']}({weather[1][city]['night']['wind_gust']}) м/с"
 
                 if weather[2][city]['alerts'] != [None]:
                     alerts = []
-                    for i in range(len(weather[2][city]['alerts'])):
-                        if weather[2][f'{city}']['alerts'][i]['event'][1] in 'абвгдеёжзийклмнопрстуфхцшщъыьэюя':
-                            alerts.append(i)
+                    for alert in weather[2][city]['alerts']:
+                        if alert['3'] != 'Оповещения о погоде не требуется':
+                            alerts.append(alert)
                     if alerts:
                         msg += '\n\U0000203CПредупреждения\U0000203C'
-                        for alert_indx in alerts:
-                            start_timestamp = weather[2][city]['alerts'][alert_indx]['start']
+                        for alert in alerts:
+                            start_timestamp = float(alert['0'])
                             start_dt = datetime.fromtimestamp(start_timestamp)
-                            end_timestamp = weather[2][city]['alerts'][alert_indx]['end']
+                            end_timestamp = float(alert['1'])
                             end_dt = datetime.fromtimestamp(end_timestamp)
 
                             msg += f"\n\U00002757 C {start_dt:%d.%m %H:%M} до {end_dt:%d.%m %H:%M}" \
-                                   f"\n{weather[2][city]['alerts'][alert_indx]['event']}: {weather[2][city]['alerts'][alert_indx]['description']}"
+                                   f"\n{alert['3']}: {alert['4']}"
 
                 pollution_value = air_pollution[city]
                 if isinstance(pollution_value, float):
@@ -401,8 +458,10 @@ def get_updates():
 
 if __name__ == "__main__":
     ses = DailyMailing("23")
-    a = ses.get_rates_from_exchangerate({'USD-RUB', 'EUR-RUB', 'CAD-RUB', 'RUB-KZT', 'USD-KZT'})
-    b = ses.get_air_pollution(["Krasnoyarsk", "Novosibirsk", "Moscow", "Nur-Sultan"])
+    # a = ses.get_rates_from_exchangerate({'USD-RUB', 'EUR-RUB', 'CAD-RUB', 'RUB-KZT', 'USD-KZT'})
+    # b = ses.get_air_pollution(["Krasnoyarsk", "Novosibirsk", "Moscow", "Nur-Sultan"])
     c = ses.get_api_weather(["Krasnoyarsk", "Novosibirsk", "Moscow", "Nur-Sultan"])
-    d = ses.parse_random_fact()
-    print(c)
+    # c = ses.get_api_weather(["Krasnoyarsk"])
+    # d = ses.parse_random_fact()
+    # ses.parse_btc_rate()
+    # print(c)

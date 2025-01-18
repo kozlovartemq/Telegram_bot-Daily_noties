@@ -37,7 +37,7 @@ async def job(userid: str, dictvalue: dict):
                 rates = session.get_rates_from_exchangerate(rates_without_btc)
 
         if rates_without_btc != set(session.exchange_rates):
-            btc = session.parse_btc_rate_google()
+            btc = session.parse_btc_rate()
 
         if isinstance(rates, dict) or isinstance(btc, float):
             rate_differance = session.get_differance_in_rates(rates, btc)
