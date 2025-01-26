@@ -162,7 +162,7 @@ class DailyMailing:
             bot_data = json.load(f)
         for city in cities:
             try:
-                ya_pogoda = requests.get(url=f"https://api.weather.yandex.ru/v2/forecast?lat={weather_json[city]['lat']}&{weather_json[city]['lon']}&lang=ru_RU&limit=2",
+                ya_pogoda = requests.get(url=f"https://api.weather.yandex.ru/v2/forecast?lat={weather_json[city]['lat']}&lon={weather_json[city]['lon']}&lang=ru_RU&limit=2",
                                          headers={'X-Yandex-Weather-Key': bot_data['API_Yapogoda_key']}).json()
                 ya_pogoda_fact = ya_pogoda['fact']
                 desc_map = {
@@ -389,13 +389,20 @@ class DailyMailing:
 
             for city in weather[0].keys():
 
-                msg += f"\n\n\U0001f3e2Cейчас в {city} {weather[0][city]['condition']} {'('+weather[0][city]['phenom_condition']+')' if weather[0][city]['phenom_condition'] else ''} {weather[0][f'{city}']['temp']} C," \
+                ru_cities_map = {
+                    "Krasnoyarsk": 'Красноярске',
+                    "Novosibirsk": 'Новосибирске',
+                    "Moscow": 'Москве',
+                    "Nur-Sultan": 'Астане',
+                }
+
+                msg += f"\n\n\U0001f3e2Cейчас в {ru_cities_map[city]} {weather[0][city]['condition']}{' ('+weather[0][city]['phenom_condition']+')' if weather[0][city]['phenom_condition'] else ''} {weather[0][f'{city}']['temp']}° C," \
                        f"\nветер {weather[0][city]['wind_speed']} м/с с порывами до {weather[0][city]['wind_gust']} м/с." \
-                       f"\nПрогноз на {weather[1][city]['date']}:" \
+                       f"\nПрогноз на {datetime.fromisoformat(weather[1][city]['date']).strftime('%d.%m.%Y')}:" \
                        f"\nВосход-закат {weather[1][city]['sunrise']}-{weather[1][city]['sunset']}" \
-                       f"\nутром: {weather[1][city]['morning']['condition']} {weather[1][city]['morning']['temp_min']} C, ветер {weather[1][city]['morning']['wind_speed']}({weather[1][city]['morning']['wind_gust']}) м/с" \
-                       f"\nв обед: {weather[1][city]['day']['condition']} {weather[1][city]['day']['temp_min']} C, ветер {weather[1][city]['day']['wind_speed']}({weather[1][city]['day']['wind_gust']}) м/с" \
-                       f"\nночью: {weather[1][city]['night']['condition']} {weather[1][city]['night']['temp_min']} C, ветер {weather[1][city]['night']['wind_speed']}({weather[1][city]['night']['wind_gust']}) м/с"
+                       f"\nутром: {weather[1][city]['morning']['condition']} {weather[1][city]['morning']['temp_min']}° C, ветер {weather[1][city]['morning']['wind_speed']}({weather[1][city]['morning']['wind_gust']}) м/с" \
+                       f"\nв обед: {weather[1][city]['day']['condition']} {weather[1][city]['day']['temp_min']}° C, ветер {weather[1][city]['day']['wind_speed']}({weather[1][city]['day']['wind_gust']}) м/с" \
+                       f"\nночью: {weather[1][city]['night']['condition']} {weather[1][city]['night']['temp_min']}° C, ветер {weather[1][city]['night']['wind_speed']}({weather[1][city]['night']['wind_gust']}) м/с"
 
                 if weather[2][city]['alerts'] != [None]:
                     alerts = []
@@ -460,8 +467,8 @@ if __name__ == "__main__":
     ses = DailyMailing("23")
     # a = ses.get_rates_from_exchangerate({'USD-RUB', 'EUR-RUB', 'CAD-RUB', 'RUB-KZT', 'USD-KZT'})
     # b = ses.get_air_pollution(["Krasnoyarsk", "Novosibirsk", "Moscow", "Nur-Sultan"])
-    c = ses.get_api_weather(["Krasnoyarsk", "Novosibirsk", "Moscow", "Nur-Sultan"])
-    # c = ses.get_api_weather(["Krasnoyarsk"])
+    # c = ses.get_api_weather(["Krasnoyarsk", "Novosibirsk", "Moscow", "Nur-Sultan"])
+    c = ses.get_api_weather(["Krasnoyarsk"])
     # d = ses.parse_random_fact()
     # ses.parse_btc_rate()
     # print(c)
